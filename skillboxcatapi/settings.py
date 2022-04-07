@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import os
 from pathlib import Path
-
+from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -19,11 +19,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-c1#wv!wxffuh4s7o3z^4c45*!&let-_rty^gzyt-0$rja664c+'
 
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-zl0-)_u#cz7xwakj*067%(t&0zo4i$&%p$9g*n(k8_*=ufx3=c')
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = bool(config('DEBUG') == 'TRUE')
 
 ALLOWED_HOSTS = []
 
@@ -84,18 +83,30 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'skillboxcatapi.wsgi.application'
-
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if config('PRODUCTION') == 'TRUE':
+    DATABASES = {
+        'default': {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": config('DB_NAME'),
+            "USER": config('DB_USER'),
+            "HOST": config('DB_HOST'),
+            "PORT": config('DB_PORT'),
+            "PASSWORD": config('DB_PASSWORD'),
+        }
     }
-}
-
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
