@@ -1,0 +1,5 @@
+media
+images
+.idea
+.env
+db.sqlite3
