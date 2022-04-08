@@ -82,6 +82,8 @@ TEMPLATES = [
     },
 ]
 
+
+
 WSGI_APPLICATION = 'skillboxcatapi.wsgi.application'
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True

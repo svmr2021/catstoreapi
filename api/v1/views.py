@@ -20,7 +20,7 @@ class AnimalListView(ListAPIView):
     serializer_class = AnimalListSerializer
     queryset = Animal.objects.filter(is_active=True)
     filter_backends = [filters.OrderingFilter, ]
-    ordering_fields = ['species', 'age', 'title',]
+    ordering_fields = ['species', 'age', 'title', ]
 
 
 class AnimalDetailView(RetrieveAPIView):
