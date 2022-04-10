@@ -163,3 +163,6 @@ REST_FRAMEWORK = {
         'django_filters.rest_framework.DjangoFilterBackend'
     ]
 }
+
+WEB_URL = config("WEB_URL", 'localhost')
+TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN')

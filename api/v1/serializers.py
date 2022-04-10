@@ -18,7 +18,7 @@ class AnimalListSerializer(ModelSerializer):
         fields = (
             'id',
             'title',
-            'image',
+            'species',
         )
 
 

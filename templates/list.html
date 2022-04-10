@@ -1,8 +1,40 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    {% for i in animal_list %}
-        {{ i }}
-    {% endfor %}
+    <ul>
+        {% for animal in animals.results %}
+            <li>
+                <a href="{% url 'animal_detail'  animal.id %}">{{ animal.title }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+
+
+
+{#    <div id="items">#}
+{##}
+{#    </div>#}
+
+{#    <script type="text/javascript">#}
+{#    let apiUrl = '/api/v1/list/';#}
+{#    fetch(apiUrl).then(response => {#}
+{#      return response.json();#}
+{#    }).then(data => {#}
+{#        console.log(data)#}
+{#        let container = document.getElementById("items");#}
+{#        for (let i = 0; i < data.length; i++) {#}
+{#            let title = `<a href="detail.html"/${data[i].id}">${data[i].title}</a><br><br>`;#}
+{#            let image = `<img src="${data[i].image}" height="50"/><br>`;#}
+{#            console.log(image, title);#}
+{#            container.innerHTML += image;#}
+{#            container.innerHTML += title;#}
+{#        }#}
+{##}
+{#    }).catch(err => {#}
+{#      // Do something for an error here#}
+{#    });#}
+{#    </script>#}
+
 {% endblock %}
+
 
