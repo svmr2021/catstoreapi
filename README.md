@@ -1,4 +1,4 @@
-BackEnd is up with RESTApi. Django used to prepare API
+BackEnd is up with RESTApi. Django used to prepare API\n
 Telegram bot @skillboxcatapi_bot used as FrontEnd 
 
 To run application:
