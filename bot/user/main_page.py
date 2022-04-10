@@ -63,15 +63,16 @@ class CatStore(object):
         try:
             text = KEYS.get('WELCOME').format(message.from_user.first_name)
             markup = ReplyKeyboardMarkup(resize_keyboard=True)
-            markup.add(KEYS.get('LOOK_CATS'))
+            markup.add(KEYS.get('LOOK_CATS'), KEYS.get('SEARCH'), row_width=1)
             self.client.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
         except Exception as e:
             logger.error(e)
 
     def animal_list(self, message, set_state=False, limit=5, offset=0,
-                    page_number=1, delete_prev=False, filtration_menu=False, filter_field=None):
+                    page_number=1, delete_prev=False, filtration_menu=False, filter_field=None, search=False, search_field=None):
         """
         List of animals
+        :param search:
         :param filter_field:
         :param filtration_menu:
         :param delete_prev:
@@ -87,86 +88,97 @@ class CatStore(object):
             if set_state:
                 self.set_or_update_state(user_id=message.chat.id,
                                          kwargs=dict(limit=limit, offset=offset, page_number=page_number,
-                                                     filtration_menu=filtration_menu, filter_field=filter_field))
+                                                     filtration_menu=filtration_menu, filter_field=filter_field,
+                                                     search=search, search_field=search_field))
             state = self.get_state(user_id=message.chat.id)
             limit = state['limit']
             offset = state['offset']
-            url = self.web_url + '/api/v1/list/'
-            payload = dict(limit=limit, offset=offset)
+            if search:
+                self.set_or_update_state(user_id=message.chat.id, kwargs=dict(search=True, search_field=search_field))
+                url = self.web_url + '/api/v1/search/'
+                payload = dict(limit=limit, offset=offset, q=search_field)
+            else:
+                url = self.web_url + '/api/v1/list/'
+                payload = dict(limit=limit, offset=offset)
             if filter_field:
                 payload['ordering'] = filter_field
                 self.set_or_update_state(user_id=message.chat.id, kwargs=dict(filter_field=filter_field))
             request = requests.get(url=url, params=payload)
             if request.status_code == 200:
                 data = request.json()
-                count = data['count']
-                number_of_pages = math.ceil(count / limit)
-                self.set_or_update_state(user_id=message.chat.id, kwargs=dict(max_page_num=number_of_pages))
-                animals = data['results']
-                text = KEYS.get("ANIMAL_LIST")
-                text += '```\n'
-                markup = InlineKeyboardMarkup()
-                buttons = []
-                for index, animal in enumerate(animals):
-                    text += f"{index + 1:<1}.{animal['title'] : <17}{animal['species'] : ^0}\n"
-                    buttons.append(
-                        InlineKeyboardButton(text=animal['title'], callback_data=f'#animal_detail||{animal["id"]}'))
-                text += '```\n'
-                markup.add(*buttons, row_width=1)
-                if data['previous']:
-                    previous_text = '<'
-                    previous_callback = f'#<||{page_number - 1}'
+                if data:
+                    count = data['count']
+                    number_of_pages = math.ceil(count / limit)
+                    self.set_or_update_state(user_id=message.chat.id, kwargs=dict(max_page_num=number_of_pages))
+                    animals = data['results']
+                    text = KEYS.get("ANIMAL_LIST")
+                    text += '```\n'
+                    markup = InlineKeyboardMarkup()
+                    buttons = []
+                    for index, animal in enumerate(animals):
+                        text += f"{index + 1:<1}.{animal['title'] : <17}{animal['species'] : ^0}\n"
+                        buttons.append(
+                            InlineKeyboardButton(text=animal['title'], callback_data=f'#animal_detail||{animal["id"]}'))
+                    text += '```\n'
+                    markup.add(*buttons, row_width=1)
+                    if data['previous']:
+                        previous_text = '<'
+                        previous_callback = f'#<||{page_number - 1}'
+                    else:
+                        previous_text = ' '
+                        previous_callback = f' '
+                    previous_page = InlineKeyboardButton(text=previous_text, callback_data=previous_callback)
+                    if data['next']:
+                        next_text = '>'
+                        next_callback = f'#>||{page_number + 1}'
+                    else:
+                        next_text = ' '
+                        next_callback = f' '
+                    next_page = InlineKeyboardButton(text=next_text, callback_data=next_callback)
+                    page_number = state['page_number']
+                    page = InlineKeyboardButton(text=f'{page_number}/{number_of_pages}', callback_data=' ')
+                    markup.add(previous_page, page, next_page)
+                    if filtration_menu:
+                        self.set_or_update_state(user_id=message.chat.id, kwargs=dict(filtration_menu=True))
+                        filter_text = KEYS.get('FILTER') + '  ⬆️'
+                        filter_callback = '#filter_open'
+                        markup.add(InlineKeyboardButton(text=filter_text, callback_data=filter_callback))
+                        species_text = KEYS.get('SPECIES_SORTING')
+                        age_text = KEYS.get('AGE_SORTING')
+                        species_callback = '#sort_species'
+                        age_callback = '#sort_age'
+                        if filter_field == 'species':
+                            species_text += ' 🔼'
+                            species_callback = '#sort_species_down'
+                        elif filter_field == '-species':
+                            species_text += ' 🔽'
+                            species_callback = '#sort_species_off'
+                        elif filter_field == 'age':
+                            age_text += ' 🔼'
+                            age_callback = '#sort_age_down'
+                        elif filter_field == '-age':
+                            age_text += ' 🔽'
+                            age_callback = '#sort_age_off'
+                        species_sort = InlineKeyboardButton(text=species_text, callback_data=species_callback)
+                        age_sort = InlineKeyboardButton(text=age_text, callback_data=age_callback)
+                        markup.add(species_sort, age_sort)
+                    else:
+                        self.set_or_update_state(user_id=message.chat.id, kwargs=dict(filtration_menu=False))
+                        filter_text = KEYS.get("FILTER") + '  🔽'
+                        filter_callback = '#filter_close'
+                        markup.add(InlineKeyboardButton(text=filter_text, callback_data=filter_callback))
+                    if delete_prev:
+                        self.client.delete_message(chat_id=message.chat.id, message_id=message.id)
+                    try:
+                        self.client.edit_message_text(chat_id=message.chat.id, message_id=message.id, text=text,
+                                                      parse_mode='MarkdownV2', reply_markup=markup)
+                    except:
+                        self.client.send_message(chat_id=message.chat.id, text=text, parse_mode='MarkdownV2',
+                                                 reply_markup=markup)
                 else:
-                    previous_text = ' '
-                    previous_callback = f' '
-                previous_page = InlineKeyboardButton(text=previous_text, callback_data=previous_callback)
-                if data['next']:
-                    next_text = '>'
-                    next_callback = f'#>||{page_number + 1}'
-                else:
-                    next_text = ' '
-                    next_callback = f' '
-                next_page = InlineKeyboardButton(text=next_text, callback_data=next_callback)
-                page_number = state['page_number']
-                page = InlineKeyboardButton(text=f'{page_number}/{number_of_pages}', callback_data=' ')
-                markup.add(previous_page, page, next_page)
-                if filtration_menu:
-                    self.set_or_update_state(user_id=message.chat.id, kwargs=dict(filtration_menu=True))
-                    filter_text = KEYS.get('FILTER') + '  ⬆️'
-                    filter_callback = '#filter_open'
-                    markup.add(InlineKeyboardButton(text=filter_text, callback_data=filter_callback))
-                    species_text = KEYS.get('SPECIES_SORTING')
-                    age_text = KEYS.get('AGE_SORTING')
-                    species_callback = '#sort_species'
-                    age_callback = '#sort_age'
-                    if filter_field == 'species':
-                        species_text += ' 🔼'
-                        species_callback = '#sort_species_down'
-                    elif filter_field == '-species':
-                        species_text += ' 🔽'
-                        species_callback = '#sort_species_off'
-                    elif filter_field == 'age':
-                        age_text += ' 🔼'
-                        age_callback = '#sort_age_down'
-                    elif filter_field == '-age':
-                        age_text += ' 🔽'
-                        age_callback = '#sort_age_off'
-                    species_sort = InlineKeyboardButton(text=species_text, callback_data=species_callback)
-                    age_sort = InlineKeyboardButton(text=age_text, callback_data=age_callback)
-                    markup.add(species_sort, age_sort)
-                else:
-                    self.set_or_update_state(user_id=message.chat.id, kwargs=dict(filtration_menu=False))
-                    filter_text = KEYS.get("FILTER") + '  🔽'
-                    filter_callback = '#filter_close'
-                    markup.add(InlineKeyboardButton(text=filter_text, callback_data=filter_callback))
-                if delete_prev:
-                    self.client.delete_message(chat_id=message.chat.id, message_id=message.id)
-                try:
-                    self.client.edit_message_text(chat_id=message.chat.id, message_id=message.id, text=text,
-                                                  parse_mode='MarkdownV2', reply_markup=markup)
-                except:
-                    self.client.send_message(chat_id=message.chat.id, text=text, parse_mode='MarkdownV2',
-                                             reply_markup=markup)
+                    self.client.send_message(chat_id=message.chat.id, text=KEYS.get("NOT_FOUND"))
+                    if search:
+                        self.search(message=message)
             else:
                 self.client.send_message(chat_id=message.chat.id, text=KEYS.get('ERROR'))
         except Exception as e:
@@ -185,6 +197,8 @@ class CatStore(object):
             max_page_num = state['max_page_num']
             filtration_menu = state['filtration_menu']
             filer_field = state['filter_field']
+            search = state['search']
+            search_field = state['search_field']
             if next:
                 if (int(page_number) + 1) <= int(max_page_num):
                     page_number += 1
@@ -195,7 +209,8 @@ class CatStore(object):
                     offset -= limit
             self.set_or_update_state(user_id=message.chat.id,
                                      kwargs=dict(limit=limit, offset=offset, page_number=page_number))
-            self.animal_list(message=message, filtration_menu=bool(filtration_menu), filter_field=filer_field)
+            self.animal_list(message=message, filtration_menu=bool(filtration_menu), filter_field=filer_field,
+                             search=bool(search), search_field=bool(search_field))
         except Exception as e:
             logger.error(e)
 
@@ -228,3 +243,32 @@ class CatStore(object):
                 self.client.send_message(chat_id=call.message.chat.id, text=KEYS.get('ERROR'))
         except Exception as e:
             logger.error(e)
+
+    def search(self, message):
+        """
+        Search animals
+        :param message:
+        :return:
+        """
+        try:
+            markup = ReplyKeyboardMarkup(resize_keyboard=True)
+            markup.add(KEYS.get('BACK'))
+            msg = self.client.send_message(chat_id=message.chat.id, text=KEYS.get('ASK_SEARCH'), reply_markup=markup)
+            self.client.register_next_step_handler(msg, self.take_search)
+        except Exception as e:
+            logger.error(e)
+
+    def take_search(self, message):
+        """
+        Search animals
+        :param message:
+        :return:
+        """
+        try:
+            if message.text == KEYS.get('BACK'):
+                self.main_page(message=message)
+            else:
+                self.animal_list(message=message, set_state=True, search=True, search_field=message.text)
+        except Exception as e:
+            logger.error(e)
+
