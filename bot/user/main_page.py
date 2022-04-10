@@ -213,7 +213,7 @@ class CatStore(object):
             self.set_or_update_state(user_id=message.chat.id,
                                      kwargs=dict(limit=limit, offset=offset, page_number=page_number))
             self.animal_list(message=message, filtration_menu=bool(filtration_menu), filter_field=filer_field,
-                             search=bool(search), search_field=bool(search_field))
+                             search=bool(search), search_field=search_field)
         except Exception as e:
             logger.error(e)
 
