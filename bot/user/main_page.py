@@ -54,14 +54,15 @@ class CatStore(object):
         except Exception as e:
             logger.error(e)
 
-    def main_page(self, message):
+    def main_page(self, message, text=None):
         """
         Main page in bot
         :param message:
         :return:
         """
         try:
-            text = KEYS.get('WELCOME').format(message.from_user.first_name)
+            if not text:
+                text = KEYS.get('WELCOME').format(message.from_user.first_name)
             markup = ReplyKeyboardMarkup(resize_keyboard=True)
             markup.add(KEYS.get('LOOK_CATS'), KEYS.get('SEARCH'), row_width=1)
             self.client.send_message(chat_id=message.chat.id, text=text, reply_markup=markup)
@@ -106,7 +107,7 @@ class CatStore(object):
             request = requests.get(url=url, params=payload)
             if request.status_code == 200:
                 data = request.json()
-                if data:
+                if data['results']:
                     count = data['count']
                     number_of_pages = math.ceil(count / limit)
                     self.set_or_update_state(user_id=message.chat.id, kwargs=dict(max_page_num=number_of_pages))
@@ -173,6 +174,8 @@ class CatStore(object):
                         self.client.edit_message_text(chat_id=message.chat.id, message_id=message.id, text=text,
                                                       parse_mode='MarkdownV2', reply_markup=markup)
                     except:
+                        if search:
+                            self.main_page(message=message, text=KEYS.get("SEARCH_RESULT"))
                         self.client.send_message(chat_id=message.chat.id, text=text, parse_mode='MarkdownV2',
                                                  reply_markup=markup)
                 else:
