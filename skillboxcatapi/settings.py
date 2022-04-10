@@ -165,3 +165,9 @@ REST_FRAMEWORK = {
 
 WEB_URL = config("WEB_URL", 'localhost')
 TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN')
+
+SUPERUSER = {
+    'username' : config("SUPERUSER_USERNAME"),
+    'password' : config('SUPERUSER_PASSWORD'),
+    'email' : config("SUPERUSER_EMAIL")
+}
