@@ -105,8 +105,6 @@ class CatStore(object):
                 payload['ordering'] = filter_field
                 self.set_or_update_state(user_id=message.chat.id, kwargs=dict(filter_field=filter_field))
             request = requests.get(url=url, params=payload)
-            print(request)
-            print(request.json())
             if request.status_code == 200:
                 data = request.json()
                 if data['results']:
