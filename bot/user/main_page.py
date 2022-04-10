@@ -117,7 +117,7 @@ class CatStore(object):
                     markup = InlineKeyboardMarkup()
                     buttons = []
                     for index, animal in enumerate(animals):
-                        text += f"{index + 1:<1}.{animal['title'] : <17}{animal['species'] : ^0}\n"
+                        text += f"{index + 1:<1}.{animal['title'] : <19}{animal['species'] : ^0}\n"
                         buttons.append(
                             InlineKeyboardButton(text=animal['title'], callback_data=f'#animal_detail||{animal["id"]}'))
                     text += '```\n'
